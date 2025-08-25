@@ -25,6 +25,12 @@ RUN mkdir input
 
 COPY input ./input
 
+WORKDIR /home/btap_ml/src
+
+RUN pip3 install "pydantic[dotenv]"
+RUN pip3 install uvicorn
+RUN pip3 install python-multipart
+RUN pip3 install pyjwt[crypto]
+
 
 CMD ["/bin/bash"]
-
