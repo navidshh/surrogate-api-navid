@@ -13,5 +13,6 @@ RUN pip3 install "pydantic[dotenv]"
 RUN pip3 install uvicorn
 RUN pip3 install python-multipart
 RUN pip3 install pyjwt[crypto]
+RUN pip3 install psutil
 
 CMD ["/bin/bash"]

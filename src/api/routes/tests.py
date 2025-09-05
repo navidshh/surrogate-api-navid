@@ -17,10 +17,23 @@ import redis.asyncio as redis
 from redis import exceptions as redis_exceptions
 from ..auth.dependency_functions import get_current_user
 from ..api_config import settings
+import sys
 # from ..redis_client import redis_client
 
 
-logging.basicConfig(level=logging.INFO)
+# logs of level INFO and higher to standard output.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        # If you want to log to a file as well, you can add a FileHandler here
+        # logging.FileHandler("debug.log"),
+        
+        # This handler sends logs to the console
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -31,7 +44,8 @@ def get_redis(request: Request):
 
 @router.get("/test")
 def test_endpoint():
-    return {"message": "Test OK"}
+    logger.info(f"Test endpoint")
+    return {"message": "Test OK with logging"}
 
 @router.get("/protected", response_model=dict)
 async def protected_route(token_info: TokenInfo = Depends(get_current_token)):

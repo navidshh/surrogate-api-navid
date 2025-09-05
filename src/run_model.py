@@ -20,11 +20,31 @@ from typing import Dict, Optional, Any
 import yaml
 
 import time
+import sys
+import psutil
 
 # Get a log handler
-logging.basicConfig(level=logging.INFO)
+# logs of level INFO and higher to standard output.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        # If you want to log to a file as well, you can add a FileHandler here
+        # logging.FileHandler("debug.log"),
+        
+        # This handler sends logs to the console
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
 logger = logging.getLogger(__name__)
 
+def log_memory_usage(stage: str):
+    process = psutil.Process()
+    mem_info = process.memory_info()
+    mem_mb = mem_info.rss / 1_000_000  # in MB
+    mem_gb = mem_mb / 1024
+    logger.info(f"Memory usage ({stage}): {mem_mb:.1f} MB ({mem_gb:.2f} GB)")
 
 
 def initialize_run_process(docker_input_path, config_file, model_file, ohe_file, cleaned_columns_file,
@@ -170,18 +190,18 @@ def run_predictions(
 
     if len(config_file) > 0:
         #load_and_validate_config(config_file)
-        logger.info("Massoud Config file path: %s", DOCKER_INPUT_PATH + config_file)
+        logger.info("BSUP Config file path: %s", DOCKER_INPUT_PATH + config_file)
         try:
             cfg = config.get_config(DOCKER_INPUT_PATH + config_file)
-            logger.info("Massoud Config loaded: %s", cfg)
+            logger.info("BSUP Config loaded: %s", cfg)
         except Exception as e:
-            logger.error("Massoud Failed to load config: %s", str(e))
+            logger.error("BSUP Failed to load config: %s", str(e))
         # Load the energy training files
         if energy_model_file == "": energy_model_file = cfg.get(settings.APP_CONFIG.ENERGY_PREFIX + settings.APP_CONFIG.TRAINED_MODEL_FILE)
         if energy_ohe_file == "": energy_ohe_file = cfg.get(settings.APP_CONFIG.ENERGY_PREFIX + settings.APP_CONFIG.OHE_FILE)
         if energy_cleaned_columns_file == "": 
             energy_cleaned_columns_file = cfg.get(settings.APP_CONFIG.ENERGY_PREFIX + settings.APP_CONFIG.CLEANED_COLUMNS_FILE)
-            logger.info("Massoud Energy cleaned columns file path: %s", energy_cleaned_columns_file)
+            
         if energy_scaler_X_file == "": energy_scaler_X_file = cfg.get(settings.APP_CONFIG.ENERGY_PREFIX + settings.APP_CONFIG.SCALER_X_FILE)
         if energy_scaler_y_file == "": energy_scaler_y_file = cfg.get(settings.APP_CONFIG.ENERGY_PREFIX + settings.APP_CONFIG.SCALER_Y_FILE)
         if energy_selected_features_file == "": energy_selected_features_file = cfg.get(settings.APP_CONFIG.ENERGY_PREFIX + settings.APP_CONFIG.FEATURES_FILE)
@@ -238,18 +258,18 @@ def run_predictions(
         # Validate all input arguments before continuing
         # Load the energy model if selected
         if running_process.lower() == config.Settings().APP_CONFIG.ENERGY:
-            logger.info("Massoud energy_model0:")
+            
             input_model = initialize_run_process(DOCKER_INPUT_PATH, config_file, energy_model_file, energy_ohe_file,
                                                  energy_cleaned_columns_file, energy_scaler_X_file, energy_scaler_y_file,
                                                  building_params_folder, start_date, end_date, energy_selected_features_file)
-            logger.info("Massoud energy_model:")
+            
         # Load the costing model if selected
         elif running_process.lower() == config.Settings().APP_CONFIG.COSTING:
-            logger.info("Massoud costing_model0:")
+            
             input_model = initialize_run_process(DOCKER_INPUT_PATH, config_file, costing_model_file, costing_ohe_file,
                                                  costing_cleaned_columns_file, costing_scaler_X_file, costing_scaler_y_file,
                                                  building_params_folder, start_date, end_date, costing_selected_features_file)
-            logger.info("Massoud costing_model:")
+            
         # If neither are selected, terminat ethe program
         else:
             return "The selected running type", str(running_process), "is invalid. Program is terminating."
@@ -306,10 +326,13 @@ def run_predictions(
         X = scaler_X.transform(X_df)
         logger.info("Loading the specified keras model.")
         # Load the keras model
+        log_memory_usage("BSUP report, Before loading model")
         if selected_model_type.lower() == config.Settings().APP_CONFIG.MULTILAYER_PERCEPTRON:
             model = keras.models.load_model(input_model.model_file, compile=False)
         else:
             model = joblib.load(input_model.model_file)
+
+        log_memory_usage("BSUP report, After loading model")
 
         logger.info("Getting the predictions for the input data.")
 

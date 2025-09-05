@@ -88,8 +88,8 @@ async def health_check():
 
 # 2. Main application endpoint
 @app.get("/api/v1/data", response_class=JSONResponse)
-async def get_sample_data(user: Optional[Dict[str, Any]] = Depends(get_api_user)):
-# async def get_sample_data(user: Optional[Dict[str, Any]] = Depends(get_current_user)):
+async def get_sample_data(user: Optional[Dict[str, Any]] = Depends(get_current_user)):
+# async def get_sample_data(user: Optional[Dict[str, Any]] = Depends(get_current_user)):get_api_user
     """Returns sample data to authenticated users."""
     # if not user:
     #     raise HTTPException(status_code=401, detail="Unauthorized")
@@ -140,23 +140,5 @@ async def profile(request: Request, user: Optional[Dict[str, Any]] = Depends(get
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 3000))
+    port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
-# if __name__ == "__main__":
-#     import asyncio
-#     import uvicorn
-
-#     async def main():
-#         config = uvicorn.Config(app, host="0.0.0.0", port=int(os.getenv("PORT", 3000)))
-#         server = uvicorn.Server(config)
-#         await server.serve()
-
-#     try:
-#         asyncio.run(main())
-#     except KeyboardInterrupt:
-#         logger.info("Shutting down via Ctrl+C")
-#     finally:
-#         # Manually restore prompt on Windows
-#         import sys
-#         sys.stdout.write('\n')
-#         sys.stdout.flush()

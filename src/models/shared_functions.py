@@ -31,7 +31,7 @@ def validate_files_exist(value, values):
     # Add the input prefix to all values as needed
     value = add_file_prefix_if_needed(values.get("input_prefix"), value)
 
-    logger.info("Massoud Value: %s", value)
+    logger.info("BSUP Value: %s", value)
     # For a single string, validate if it exists
     if isinstance(value, str) and not os.path.isfile(value):
         raise InvalidInputException(value=value, message=ERROR_MESSAGE)
@@ -130,7 +130,7 @@ def add_input_prefix_for_batch_input(input_prefix, path):
         if filename.endswith(".xlsx"):
             contains_xlsx_files = True
 
-    logger.info("Massoud XLSX: %s", path)
+    logger.info("BSUP XLSX: %s", path)
     if not contains_xlsx_files:
         raise InvalidInputException(value=input_prefix + path, message="The specified building directory contains no .xlsx files.")
     return path

@@ -1,0 +1,13 @@
+# Cognito configuration
+COGNITO_REGION=ca-central-1
+COGNITO_USER_POOL_ID=ca-central-1_xxxxxxx
+COGNITO_APP_CLIENT_ID=4osaxxxxxxxxxxxao9kus1t    # secret client id for hosted Cognito UI
+COGNITO_APP_PUBLIC_CLIENT_ID = 407500xxxxxxxxxpnv47a   # For Swagger/Postman...
+COGNITO_APP_CLIENT_SECRET=a4vrxxxxxxxxxxxxxxxxxxxxxtkh21ijauhsol3
+COGNITO_DOMAIN=https://my-app-dev-auth.auth.ca-central-1.amazoncognito.com
+APP_BASE_URL=http://localhost:8000  # For production like: http://btap-app4-dev-alb-1261227763.ca-central-1.elb.amazonaws.com
+VERSION_STRING=v1.3.0
+
+# Environment variables (from ECS Task Definition)
+REDIS_ENDPOINT = host.docker.internal # redis   # !! not localhost
+REDIS_PORT = 6379

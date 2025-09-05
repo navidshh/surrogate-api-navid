@@ -628,7 +628,7 @@ def main(config_file: str = typer.Argument(..., help="Location of the .yml confi
     if len(output_path) < 1:
         output_path = config.Settings().APP_CONFIG.DOCKER_OUTPUT_PATH
     # Validation of all inputs
-    logger.info("Massoud.")
+    logger.info("BSUP.")
     logger.info(cleaned_columns_file)
     input_model = PreprocessingModel(input_prefix=DOCKER_INPUT_PATH,
                                      building_param_files=[building_params_electric_file,
