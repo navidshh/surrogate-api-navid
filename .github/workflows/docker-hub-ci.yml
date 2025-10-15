@@ -49,9 +49,12 @@ jobs:
       - name: Deploy to Amazon ECS
         run: |
           # Set your variables
-          CLUSTER_NAME="btap-app-dev-cluster"
-          SERVICE_NAME="btap-app-dev-service"
-          TASK_FAMILY="btap-app-dev-task"
+          # CLUSTER_NAME="btap-app4-dev-cluster"
+          # SERVICE_NAME="btap-app4-dev-service"
+          # TASK_FAMILY="btap-app4-dev-task"
+          CLUSTER_NAME=${{ secrets.ECS_CLUSTER_NAME }}
+          SERVICE_NAME=${{ secrets.ECS_SERVICE_NAME }}
+          TASK_FAMILY=${{ secrets.ECS_TASK_FAMILY }}      
 
           # This directly and reliably gets the tag that triggered the workflow (e.g., "1.1.4")
           NEW_IMAGE_URI="${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:${{ github.ref_name }}"
