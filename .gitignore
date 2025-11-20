@@ -6,6 +6,11 @@ output
 testing
 # input by BSUP for tests
 
+# AWS credentials - NEVER commit these!
+.aws/
+*.pem
+*.key
+
 ### direnv ###
 .direnv
 #.envrc
