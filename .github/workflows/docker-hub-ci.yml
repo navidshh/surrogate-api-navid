@@ -1,9 +1,14 @@
-name: Docker Hub CI and Deploy on Release
-run-name: Deploy ${{ github.ref_name }}
+name: Docker Hub CI and Deploy to ECS on Release
+run-name: Deploy ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
 
 on:
   # This workflow will ONLY run when a tag is pushed.
   # Pull requests are handled by a separate, simpler workflow if needed.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Docker tag / Release version (e.g. v1.2.3)"
+        required: true    
   push:
     tags:
       - 'v*.*.*' # Recommended: Use a 'v' prefix for version tags, e.g., v1.2.0
@@ -25,6 +30,17 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Determine Docker tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "value=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            # Strip leading 'v' if you prefer clean semver tags (optional)
+            TAG=${{ github.ref_name }}
+            echo "value=${TAG#v}" >> $GITHUB_OUTPUT
+          fi            
+
       - name: Build and push Docker image to Docker Hub
         uses: docker/build-push-action@v5
         with:
@@ -32,32 +48,44 @@ jobs:
           file: ./Dockerfile.aws
           push: true
           # This correctly uses the Git tag (e.g., "v1.2.0") as the Docker tag
-          tags: ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:${{ github.ref_name }}
+          # tags: $ {{ secrets.DOCKER_USERNAME }}/$ {{ github.event.repository.name }}:$ {{ github.ref_name }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:${{ steps.tag.outputs.value }}
 
   deploy-to-ecs:
     runs-on: ubuntu-latest
     # This job depends on the build job finishing successfully
     needs: build-and-push
+    permissions:
+      id-token: write  # Required for OIDC
+      contents: read    
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ca-central-1 # <-- IMPORTANT: Change to your AWS region
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Determine Docker tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "value=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            # Strip leading 'v' if you prefer clean semver tags (optional)
+            TAG=${{ github.ref_name }}
+            echo "value=${TAG#v}" >> $GITHUB_OUTPUT
+          fi            
 
       - name: Deploy to Amazon ECS
         run: |
-          # Set your variables
-          # CLUSTER_NAME="btap-app4-dev-cluster"
-          # SERVICE_NAME="btap-app4-dev-service"
-          # TASK_FAMILY="btap-app4-dev-task"
+          # Set variables
           CLUSTER_NAME=${{ secrets.ECS_CLUSTER_NAME }}
           SERVICE_NAME=${{ secrets.ECS_SERVICE_NAME }}
           TASK_FAMILY=${{ secrets.ECS_TASK_FAMILY }}      
 
-          # This directly and reliably gets the tag that triggered the workflow (e.g., "1.1.4")
-          NEW_IMAGE_URI="${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:${{ github.ref_name }}"
+          # This directly gets the tag that triggered the workflow (e.g., "1.1.4")
+          # NEW_IMAGE_URI="$ {{ secrets.DOCKER_USERNAME }}/$ {{ github.event.repository.name }}:$ {{ github.ref_name }}"
+          NEW_IMAGE_URI="${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:${{ steps.tag.outputs.value }}"
 
           echo "Deploying new image to ECS: $NEW_IMAGE_URI"
           

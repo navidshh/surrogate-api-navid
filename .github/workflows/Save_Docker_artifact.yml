@@ -1,42 +1,47 @@
-name: Save Docker image as artifact
+name: Build and deploy to Docker Hub
+run-name: Build and Push ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
 
 on:
+  # This workflow will ONLY run when a tag is pushed.
+  # Pull requests are handled by a separate, simpler workflow if needed.
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Docker tag / Release version (e.g. v1.2.3)"
+        required: true    
 
 jobs:
-  save-and-upload:
+  build-and-push: # Renamed for clarity
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: |
-          docker build -t m-btap-ml-cpu -f Dockerfile .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Save Docker image as artifact
-        run: |
-          docker save -o image.tar m-btap-ml-cpu
-          mkdir -p ./artifacts
-          mv image.tar ./artifacts/
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          name: docker-image-mas-btap-1
-          path: ./artifacts/image.tar
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Ensure rolling tag
+      - name: Determine Docker tag
+        id: tag
         run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
-          git tag -f public-download
-          git push -f origin public-download
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "value=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            # Strip leading 'v' if you prefer clean semver tags (optional)
+            TAG=${{ github.ref_name }}
+            echo "value=${TAG#v}" >> $GITHUB_OUTPUT
+          fi          
 
-      # Upload to a GitHub Release
-      - name: Upload to release
-        uses: softprops/action-gh-release@v1
+      - name: Build and push Docker image to Docker Hub
+        uses: docker/build-push-action@v5
         with:
-          tag_name: public-download
-          files: ./artifacts/image.tar
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
+          context: .
+          file: ./Dockerfile.aws
+          push: true
+          # This correctly uses the Git tag (e.g., "v1.2.0") as the Docker tag
+          tags: ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:${{ steps.tag.outputs.value }}
