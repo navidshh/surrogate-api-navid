@@ -97,7 +97,7 @@ async def upload_file(
 
 @router.post("/run-model-s3")
 async def run_model_endpoint_s3(
-    config_file: str = Form(..., description="Configuration file name for the ML model"),
+    config_file: str = Form("input_config.yml", description="Configuration file name for the ML model (default: input_config.yml)"),
     email: Optional[str] = Form(None, description="Optional user email address")
 ):
     try:
@@ -132,7 +132,7 @@ async def run_model_endpoint_s3(
         # Prepare dfs dict (compatible with original: key is filename)
         dfs = {input_filename: df}
 
-        # Call the ML logic
+        # Call the ML logic - config_file should be the YAML config path, not the Excel filename
         results = run_predictions(config_file=config_file, api_mode=True, building_data_dict=dfs)
 
         if not results or "error" in results:
