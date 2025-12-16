@@ -293,6 +293,7 @@ def run_predictions(
                                                         end_date=input_model.end_date,
                                                         ohe_file=input_model.ohe_file,
                                                         cleaned_columns_file=input_model.cleaned_columns_file,
+                                                        api_mode=True,
                                                         building_data_dict=building_data_dict)
         else:
             X, X_ids, all_features = preprocessing.main(config_file=input_model.config_file,
